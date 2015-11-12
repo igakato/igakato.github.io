@@ -1,11 +1,385 @@
-<!D0CTYPE html>
-<html>
-  <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=shift_jis"> 
-    <title>Github Pages!�̃e�X�g</title>
-  </head>
-  <body>
-     <h1>Hello Github Pages!</h1>
-     <p>Github Pages���g�p�����AWeb�y�[�W���J�̃e�X�g�B</p>
-  </body>
+﻿<!DOCTYPE html>
+<html lang = "ja">
+<?php
+$c = mysql_connect("localhost","root","");
+mysql_select_db("br");
+	//データの取得
+	$s = mysql_query("SELECT count(*) from shoubu WHERE win = 1;");
+	$data = mysql_fetch_array($s);
+	$rireki = $data[0];
+	$s2 = mysql_query("SELECT count(*) from shoubu WHERE win = 2;");
+	$data2 = mysql_fetch_array($s2);
+	$rireki2 = $data2[0];
+	if(isset($_GET['tranp1'])){
+		$tranp1 = $_GET['tranp1'];
+	}else{
+		$tranp1 = "";
+	}
+	if(isset($_GET['tranps'])){
+		$tranps = $_GET['tranps'];
+	}else{
+		$tranps = explode(",","");
+	}
+	if(isset($_GET['tranp2'])){
+		$tranp2 = $_GET['tranp2'];
+	}else{
+		$tranp2 = "";
+	}
+	if(isset($_GET['standFlag1'])){
+		$standFlag1 = $_GET['standFlag1'];
+	}else{
+		$standFlag1 = 0;
+	}
+	if(isset($_GET['standFlag2'])){
+		$standFlag2 = $_GET['standFlag2'];
+	}else{
+		$standFlag2 = 0;
+	}					
+
+	
+	//プレイヤーの初期カード2枚をセット
+	if(isset($_GET['count1'])){
+		$count1 = $_GET['count1'];
+	}else{
+		$count1= 2;
+		for($a=0;$a<$count1;$a++){
+			$r = rand(0,51);
+			if($tranp1!=""){
+				$tranp1 = "$tranp1,$r";
+			}else{
+				$tranp1 = "$r";
+			}									
+		}
+		$tranps = explode(",","$tranp1");
+	}
+	if(isset($_GET['count2'])){
+		$count2 = $_GET['count2'];
+	}else{
+		$count2 = 2;
+		for($b=0;$b<$count2;$b++){
+			$r = rand(0,51);
+			if($tranp2!=""){
+				$tranp2 = "$tranp2,$r";
+			}else{
+				$tranp2 = "$r";
+			}
+		}
+	}
+	
+	$turn = 0;
+	$win = 0;
+	//前回何かのボタンが押されたら
+	if(isset($_GET['submit'])){
+		//Drawボタンが押されたら
+		if($_GET['submit'] == "Draw" && $_GET['player'] == '0'){
+			$count1++;
+			$r = rand(0,51);
+			$tranp1 = "$tranp1,$r";
+			$tranps = explode(",","$tranp1");
+			$turn = 1;
+		}
+		else if($_GET['submit'] == "Stand" && $_GET['player'] == '0'){
+			$standFlag1 = 1;
+			$turn = 1;
+		}
+		//Drawボタンが押されたら
+		if($_GET['submit'] == "Draw" && $_GET['player'] == 1){
+			$count2++;
+			$r = rand(0,51);
+			$tranp2 = "$tranp2,$r";
+			$turn = 0;
+		}
+		else if($_GET['submit'] == "Stand" && $_GET['player'] == '1'){
+			$standFlag2 = 1;
+			$turn = 0;
+		}
+		//再戦ボタンが押されたら
+		if($_GET['submit'] == "Saisen"){
+			$tranp1 = "";
+			$tranp2 = "";
+			$tranps = explode(",","");
+			$tranps2 = "";
+			$standFlag1 = 0;
+			$standFlag2 = 0;
+			$score1 = 0;
+			$score2 = 0;
+			$win = 0;
+			$player = 0;
+			$turn = 0;
+			$Acount = 0;
+			$num = 0;
+			$num2 = 0;
+			$count1= 2;
+			for($a=0;$a<$count1;$a++){
+				$r = rand(0,51);
+				if($tranp1!=""){
+					$tranp1 = "$tranp1,$r";
+				}else{
+					$tranp1 = "$r";
+				}									
+			}
+			$tranps = explode(",","$tranp1");
+			$count2 = 2;
+			for($b=0;$b<$count2;$b++){
+				$r = rand(0,51);
+				if($tranp2!=""){
+					$tranp2 = "$tranp2,$r";
+				}else{
+					$tranp2 = "$r";
+				}
+			}
+			$turn = 0;
+			$win = 0;
+		}
+	}
+								
+	//P1のスコアを計算
+	$score1 = 0;								//P1のスコア
+	$Acount1 = 0;								//P1が持っているAの数
+	$tranps = explode(",",$tranp1);				//カンマの中の文字を数字の配列に変換
+	//トランプを1枚ずつ調べる
+	for($i=0;$i<$count1;$i++){
+		$num = $tranps[$i];
+		$num = $num % 13 + 1;
+		if($num == 1){							//Aだったら
+			$Acount1++;
+			$num = 11;
+		}
+		elseif($num > 10){						//J,Q,Kだったら
+			$num = 10;
+		}
+		$score1 += $num;						//スコアに点数を足す
+	}
+	while($score1>=22 && $Acount1>0){			//スコアが22以上でAを持っていたら
+		$score1 -= 10;
+		$Acount1--;
+	}
+	//P2のスコアを計算
+	$score2 = 0;								//P2のスコア
+	$Acount2 = 0;								//P2が持っているAの数
+	$tranps2 = explode(",",$tranp2);			//カンマの中の文字を数字の配列に変換
+	//トランプを1枚ずつ調べる
+	for($j=0;$j<$count2;$j++){
+		$num2 = $tranps2[$j];
+		$num2 = $num2 % 13 + 1;
+		if($num2 == 1){							//Aだったら
+			$Acount2++;
+			$num2 = 11;
+		}
+		elseif($num2 > 10){						//J,Q,Kだったら
+			$num2 = 10;
+		}
+		$score2 += $num2;						//スコアに点数を足す
+	}
+	while($score2>=22 && $Acount2>0){			//スコアが22以上でAを持っていたら
+		$score2 -= 10;
+		$Acount2--;
+	}
+	
+?>
+<head>
+	<meta charset = "UTF-8">
+	<title>ブラックジャック</title>
+	<style>
+		/*背景画像と、フォントの種類を指定*/
+		body
+		{
+			background-image: url(./images/mat.jpg);
+			font-family: sans-serif;
+		}
+	</style>
+</head>
+
+<body bgcolor="#707070" text="#000000" link="#000000" vlink="#000000" alink="#000000">
+	<!--タイトル文字-->
+	<center><font style='font-size:24px'>ブラックジャック</font></center>
+	
+	<!--ゲーム画面-->
+	<table width='100%' border=0 Cellpadding='10' Cellspacing='0'>
+		<tr>
+			<td align='center'>
+			
+				<!--ゲーム画面-->
+				<table width='600px' border=3 Cellpadding='10' Cellspacing='0'>
+					<!--プレイヤー（１）-->
+					<tr>
+						<td>
+							<!--プレイヤー名を表示-->
+							<center>
+								プレイヤー１<?php echo"[".$score1."][".$rireki."勝".$rireki2."敗]"; ?>
+								<hr width='50%' style="background-color:red;border:1px solid black;">
+							</center>
+							<!--トランプを表示-->
+							<?php
+								$images = array("c01.gif","c02.gif","c03.gif","c04.gif","c05.gif","c06.gif",
+												"c07.gif","c08.gif","c09.gif","c10.gif","c11.gif","c12.gif","c13.gif",
+												"d01.gif","d02.gif","d03.gif","d04.gif","d05.gif","d06.gif",
+												"d07.gif","d08.gif","d09.gif","d10.gif","d11.gif","d12.gif","d13.gif",
+												"h01.gif","h02.gif","h03.gif","h04.gif","h05.gif","h06.gif",
+												"h07.gif","h08.gif","h09.gif","h10.gif","h11.gif","h12.gif","h13.gif",
+												"s01.gif","s02.gif","s03.gif","s04.gif","s05.gif","s06.gif",
+												"s07.gif","s08.gif","s09.gif","s10.gif","s11.gif","s12.gif","s13.gif");
+								//ターン
+								if(isset($_GET['turn'])){
+									$turn = $_GET['turn'];
+									if($standFlag1 == 1 && $standFlag2 == 1){
+										if($score1 <= 21 && $score2 <= 21){
+											if($score1 > $score2){
+												$win = 1;
+												
+												
+											}elseif($score1 < $score2){
+												$win = 2;
+											}else{
+												$win = 3;
+											}
+										}
+										$turn = 2;
+									}
+									else if($standFlag1 == 1){
+										$turn = 1;
+									}
+									else if($standFlag2 == 1){
+										$turn = 0;
+									}
+								}else{
+									$turn = 0;
+								}			
+
+								//echo"$tranp1";
+								$tranps = explode(",","$tranp1");
+								$tranps2 = explode(",","$tranp2");
+								for($i=0;$i<$count1;$i++){
+									
+									echo"<img src='./images/tranp/".$images[$tranps[$i]]."' height='140px'> ";
+								}
+								
+
+								//echo"$score1";
+								if($score1 > 21){
+									$win = 2;
+									$standFlag1 = 1;
+									$standFlag2 = 1;
+								}
+								if($score2 > 21){
+									$win = 1;
+									$standFlag1 = 1;
+									$standFlag2 = 1;
+								}
+							?>
+							<br>
+							<!--Draw,Standボタンを配置-->
+							<center>
+								<form action='game1.php' method='get'>
+								<?php
+									if($turn == 0 && $standFlag1 == 0){
+										echo"<input type='submit' name='submit' value='Draw' style='width:100px; height:40px'>";
+										echo"<input type='submit' name='submit' value='Stand' style='width:100px; height:40px'>";
+									}
+								?>
+									<input type='hidden' name='count1' value='<?php echo$count1;?>'>
+									<input type='hidden' name='count2' value='<?php echo$count2;?>'>
+									<input type='hidden' name='player' value='0'>
+									<input type='hidden' name='turn' value='1'>
+									<input type='hidden' name='tranp1' value='<?php echo$tranp1;?>'>
+									<input type='hidden' name='tranp2' value='<?php echo$tranp2;?>'>
+									<input type='hidden' name='tranps' value='<?php echo$tranps;?>'>
+									<input type='hidden' name='tranps2' value='<?php echo$tranps2;?>'>
+									<input type='hidden' name='standFlag1' value='<?php echo$standFlag1;?>'>
+									<input type='hidden' name='standFlag2' value='<?php echo$standFlag2;?>'>
+									<input type='hidden' name='score1' value='<?php echo$score1;?>'>
+									<input type='hidden' name='score2' value='<?php echo$score2;?>'>
+									<input type='hidden' name='win' value='<?php echo$win;?>'>
+									<input type='hidden' name='rireki' value='<?php echo$rireki;?>'>
+									<input type='hidden' name='rireki2' value='<?php echo$rireki2;?>'>
+								</form>
+							</center>
+						</td>
+					</tr>
+					<!--プレイヤー（２）-->
+					<tr>
+						<td>
+							<!--プレイヤー名を表示-->
+							<center>
+								プレイヤー２ <?php echo"[".$score2."][".$rireki2."勝".$rireki."敗]"; ?>
+								<hr width='50%' style="background-color:red;border:1px solid black;">
+							</center>
+							<!--トランプを表示-->
+							<?php
+								//echo"$tranp2";
+								for($j=0;$j<$count2;$j++){
+									echo"<img src='./images/tranp/".$images[$tranps2[$j]]."' height='140px'> ";
+								}
+								
+								//echo"$score2";
+								
+							?>
+							<br>
+							<!--Draw,Standボタンを配置-->
+							<center>
+								<form action='game1.php' method='get'>
+								<?php
+									if($turn == 1 && $standFlag2 == 0){
+										echo"<input type='submit' name='submit' value='Draw' style='width:100px; height:40px'>";
+										echo"<input type='submit' name='submit' value='Stand' style='width:100px; height:40px'>";
+									}
+									if($win != 0){
+										echo"<input type='submit' name='submit' value='Saisen' style='width:100px; height:40px'>";
+									}
+								?>
+									<input type='hidden' name='count1' value='<?php echo$count1;?>'>
+									<input type='hidden' name='count2' value='<?php echo$count2;?>'>
+									<input type='hidden' name='player' value='1'>
+									<input type='hidden' name='turn' value='0'>
+									<input type='hidden' name='tranp1' value='<?php echo$tranp1;?>'>
+									<input type='hidden' name='tranp2' value='<?php echo$tranp2;?>'>
+									<input type='hidden' name='tranps' value='<?php echo$tranps;?>'>
+									<input type='hidden' name='tranps2' value='<?php echo$tranps2;?>'>
+									<input type='hidden' name='standFlag1' value='<?php echo$standFlag1;?>'>
+									<input type='hidden' name='standFlag2' value='<?php echo$standFlag2;?>'>
+									<input type='hidden' name='score1' value='<?php echo$score1;?>'>
+									<input type='hidden' name='score2' value='<?php echo$score2;?>'>
+									<input type='hidden' name='win' value='<?php echo$win;?>'>
+									<input type='hidden' name='rireki' value='<?php echo$rireki;?>'>
+									<input type='hidden' name='rireki2' value='<?php echo$rireki2;?>'>
+								</form>
+							</center>
+						</td>
+					</tr>
+					<!--メッセージウィンドウ-->
+					<tr height='140px'>
+						<td align='center' valign='middle' style='background-image: url(./images/message.png);background-size:contain;background-repeat:no-repeat;'>
+							<center>
+							<?php
+								if($win == 0){
+									if($turn == 0){
+										echo"プレイヤー１の番です。";
+									}else{
+										echo"プレイヤー２の番です。";
+									}
+								}else{
+									if($win == 1){
+										echo"プレイヤー１の勝ちです。";
+									}elseif($win == 2){
+										echo"プレイヤー２の勝ちです。";
+									}elseif($win == 3){
+										echo"引き分けです。";
+									}
+									//勝負の結果を保存する
+									$date = date("Y/m/d H:i",time());
+									$str = "INSERT INTO shoubu(date,p1,p2,c1,c2,win)
+												values('$date',$score1,$score2,$count1,$count2,$win);";
+									mysql_query($str);
+									mysql_close($c);
+								}
+							?>
+							</center>
+						</td>
+					</tr>
+				</table>
+			
+			</td>
+		</tr>
+	</table>
+</body>
 </html>
